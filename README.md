@@ -45,5 +45,21 @@ Sim(x,q)= \sum_{i=0}^{d-1}x_i\cdot q_i
 ```
 En este caso, buscamos maximizar (argmax) el valor en lugar de minimizarlo.
 
+3. **El Fenómeno del "Mundo Pequeño" (Small World)**
+
+Este es el corazón teórico de los algoritmos más eficientes hoy en día.
+**Origen:** El concepto proviene de la sociología (el experimento de **Stanley Milgram**  de los [seis grados de separación](https://en.wikipedia.org/wiki/Six_degrees_of_separation)) y fue formalizado matemáticamente por **Watts y Strogatz** en 1998. Descubrieron que ciertas redes tienen dos propiedades simultáneas que parecen contradictorias:
+* **Alta agrupación local** (mis amigos son amigos entre sí).
+* **Camino promedio corto** (puedo llegar a cualquier persona del mundo en pocos saltos).
+**La Fórmula de la Navegabilidad (Kleinberg)**: **Jon Kleinberg** (2000) llevó esto más allá, preguntando no solo si el camino corto existe, sino si un algoritmo voraz (greedy) puede encontrarlo usando solo información local. Demostró que para que una red sea navegable (que puedas encontrar el destino rápidamente), la probabilidad $P(u,v)$ de que exista un enlace largo entre el nodo $u$ y el nodo $$ debe seguir una distribución específica basada en la distancia $r$ entre ellos:
+```math
+P(u,v)∝ \frac{1}{r^{\alpha}}
+```
+Si $α$ es igual a la dimensión de la red (ej. $d$), la búsqueda voraz puede encontrar el destino en tiempo polilogarítmico, 
+```math
+O\left( log^{2} N\right)
+```
+Esto es lo que permite que bases de datos con billones de vectores encuentren una respuesta en milisegundos.
+
 
 
