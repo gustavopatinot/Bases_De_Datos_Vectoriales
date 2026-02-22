@@ -2,7 +2,7 @@
 Comprensión de la importancia de la Bases de Datos Vectoriales
 
 - Desglosar este complejo tema desde sus cimientos atómicos hasta las arquitecturas algorïtmicas más avanzadas.
-
+---
 1. **La Unidad Fundamental: ¿Qué es un "Nodo"?**
 
 En el contexto de las bases de datos vectoriales, un **nodo (o vértice en la terminología de grafos)** no es simplemente un punto de datos; es una representación matemática comprimida del significado.
@@ -14,6 +14,7 @@ donde **$d$** es la **dimensión.**
 
 Los **vectores** no se crean manualmente. Son el resultado de modelos de **aprendizaje profundo** (Deep Learning) o **redes neuronales** que procesan datos no estructurados (imágenes, texto, audio). Este proceso se llama **embedding (incrustación)**. Por ejemplo, un modelo como **VGG** para imágenes o **BERT** para texto toma el objeto original y lo transforma en este vector $x$, donde la posición en el espacio captura su **semántica.**
 
+---
 2. **La Fórmula Básica de las Bases de Datos Vectoriales**
 
 La razón de ser de una base de datos vectorial es resolver el problema de la Búsqueda del Vecino Más Cercano  **(NNS - Nearest Neighbor Search)**.
@@ -45,6 +46,7 @@ Sim(x,q)= \sum_{i=0}^{d-1}x_i\cdot q_i
 ```
 En este caso, buscamos maximizar (argmax) el valor en lugar de minimizarlo.
 
+---
 3. **El Fenómeno del "Mundo Pequeño" (Small World)**
 
 Este es el corazón teórico de los algoritmos más eficientes hoy en día.
@@ -60,6 +62,67 @@ Si $α$ es igual a la dimensión de la red (ej. $d$), la búsqueda voraz puede e
 O\left( log^{2} N\right)
 ```
 Esto es lo que permite que bases de datos con billones de vectores encuentren una respuesta en milisegundos.
+
+---
+4. **Los Algoritmos Más Usados y sus Estructuras**
+
+En la práctica, usamos **Búsqueda Aproximada (ANNS)**, sacrificando un poco de precisión por velocidad.
+
+**A. HNSW (Hierarchical Navigable Small World)**
+
+Es el "estándar de oro" actual. Utiliza la teoría de **Small World** pero con una estructura jerárquica (multicapa).
+* **Estructura:** Imagina un rascacielos.
+* **Capa Superior (Capa $L$)**: Pocos nodos, conectados por enlaces muy largos. Actúa como una "autopista" para saltar grandes distancias en el espacio vectorial.
+* **Capas Intermedias:** Más nodos, enlaces de distancia media.
+* **Capa Base (Capa 0):** Todos los vectores están aquí, conectados a sus vecinos más cercanos locales,.
+* **Fórmula de Construcción (Nivel del Nodo):** Al insertar un nuevo vector $q$, se decide aleatoriamente su altura máxima (nivel l) en la jerarquía usando una distribución exponencial para asegurar la propiedad de "mundo pequeño": 
+```math
+l=⌊−ln(unif(0,1))⋅m_L⌋
+```
+
+* **unif(0,1)**: Un número aleatorio uniforme entre 0 y 1.
+* **$m_L$**: Un factor de normalización $(1/ln(M))$ donde $M$ es el número promedio de vecinos.
+* **Significado**: Pocos nodos llegan a las capas altas (autopistas), todos están en la base.
+
+* **Algoritmo de Búsqueda**: Comienza en la capa superior. Realiza una búsqueda voraz **(Greedy Search)**: muévete al vecino que esté más cerca de la consulta $q$. Cuando llegas a un mínimo local en la capa actual, "bajas" a la siguiente capa y continúas la búsqueda desde ese punto. Esto permite un efecto de "zoom-in" logarítmico hacia el objetivo.
+
+**B. Algoritmos basados en Cuantización (Product Quantization - PQ)**
+
+Usados para comprimir vectores masivos (billones de datos) para que quepan en memoria.
+* Divide el vector original de dimensión $d$ en $m$ sub-vectores. Cada **sub-vector** se reemplaza por el **ID** de un centroide precalculado (quantizer).
+  
+**Fórmula de Aproximación de Distancia**
+En lugar de calcular la distancia exacta, calculamos la distancia al código cuantizado $q(y)$: 
+```math
+d(x, y)≈d(x,q(y))=\sqrt{\sum_{j=1}^{m}d(x_j,c_{kj})^2}
+```
+
+* $x_j$: El sub-vector de la consulta.
+* $c_kj$: El centroide que representa al sub-vector del dato almacenado.
+* Estas distancias parciales se pueden pre-calcular en tablas (Lookup Tables), haciendo la búsqueda extremadamente rápida
+
+**C. Algoritmos Híbridos (Grafos + Filtros)**
+
+Un desarrollo reciente para resolver la "fractura" entre búsqueda vectorial y filtros de metadatos (SQL).
+Los grafos **HNSW** no saben manejar filtros como `"precio < 50".`
+Solución (ej. **ACORN, FUSEDANN** Herramientas investigadas para solucionar este problema):
+
+**ACORN**: Modifica la navegación del grafo para que pueda atravesar un "subgrafo de predicado". No sigue solo la geometría del vector, sino que expande la búsqueda de vecinos basándose en si cumplen el filtro.
+
+**FUSEDANN**: Fusiona matemáticamente el vector de contenido v con el atributo $f$ mediante una transformación $Ψ$: 
+```math
+Ψ(v,f,α,β)= \frac{v−αf}{β}
+```
+* $α$: Parámetro que empuja los vectores con diferentes atributos lejos unos de otros.
+* $β$: Factor de escala.
+* **Significado:** Esto crea un nuevo espacio donde los vectores que no cumplen el filtro están matemáticamente "lejos", permitiendo que el algoritmo de grafo estándar los ignore naturalmente.
+
+## Importante
+Una **base de datos vectorial** no es más que un sistema experto en calcular $δ(x,q)$ muy rápido. 
+Para lograrlo, transforma datos en nodos **(vectores)**, organiza estos nodos en **grafos** que cumplen propiedades de mundo pequeño **(pocos saltos para llegar a cualquier lado)** o los comprime **(cuantización)** para sacrificar precisión por velocidad y memoria. 
+La magia moderna radica en cómo estos sistemas ahora intentan entender no solo la distancia geométrica, sino también las restricciones lógicas (filtros) del mundo real.
+
+
 
 
 
